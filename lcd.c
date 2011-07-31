@@ -144,16 +144,20 @@ void lcd_clear()
 	}
 }
 
-void draw_bitmap_fullscreen()
+void draw_bitmap_fullscreen(const uint8_t *image)
 {
 	uint8_t chip;
-	for(chip=1;chip<=2; chip++)
+	uint16_t byte = 0;
+	for(uint8_t y = 0; y < 8; y++)
 	{
-		for(
-		uint8_t page = y/8;
+		lcd_cmd_write(CMD_LCD_SET_PAGE|y,CHIP1|CHIP2);
+		lcd_cmd_write(CMD_LCD_SET_ADDRESS|0,CHIP1|CHIP2);
+		for(uint8_t x = 0; x < 128; x++)
+		{
+			if(x<64) chip=1; else chip=2;
+			lcd_data_write(pgm_read_byte(image+(byte++)),chip);
+		}
 	}
-	lcd_cmd_write(CMD
-	for(uint8_t
 }
 
 
@@ -163,7 +167,8 @@ int main()
 	lcd_init();
 	lcd_clear();
 
-	lcd_data_write(0xFF,CHIP1);
+	draw_bitmap_fullscreen(logo);
+
 	while(1)
 	{
 		uint8_t t=0;

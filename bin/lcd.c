@@ -4,7 +4,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-
+#include "logo_load.h"
 
 #define DATA_PORT PORTB
 #define DATA_DDR  DDRB
@@ -137,10 +137,26 @@ void lcd_clear()
 		lcd_cmd_write(CMD_LCD_SET_ADDRESS|ADDRESS0,CHIP1|CHIP2);
 		for(uint8_t x = 0; x < 64; x++)
 		{
-			lcd_data_write(0xF0,CHIP1|CHIP2);
+			lcd_data_write(0x00,CHIP1|CHIP2);
 		}
 		lcd_cmd_write(CMD_LCD_SET_PAGE|PAGE0,CHIP1|CHIP2);
 		lcd_cmd_write(CMD_LCD_SET_ADDRESS|ADDRESS0,CHIP1|CHIP2);
+	}
+}
+
+void draw_bitmap_fullscreen(const uint8_t *image)
+{
+	uint8_t chip;
+	uint16_t byte = 0;
+	for(uint8_t y = 0; y < 8; y++)
+	{
+		lcd_cmd_write(CMD_LCD_SET_PAGE|y,CHIP1|CHIP2);
+		lcd_cmd_write(CMD_LCD_SET_ADDRESS|0,CHIP1|CHIP2);
+		for(uint8_t x = 0; x < 128; x++)
+		{
+			if(x<64) chip=1; else chip=2;
+			lcd_data_write(pgm_read_byte(image+(byte++)),chip);
+		}
 	}
 }
 
@@ -151,7 +167,8 @@ int main()
 	lcd_init();
 	lcd_clear();
 
-	lcd_data_write(0xFF,CHIP1);
+	draw_bitmap_fullscreen(logo);
+
 	while(1)
 	{
 		uint8_t t=0;
