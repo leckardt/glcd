@@ -32,8 +32,6 @@ void lcd_write(uint8_t value, uint8_t chip)
 	HIGH(EN_PORT, EN_PIN);
 	_delay_us(2); //>1000ns
 	LOW(EN_PORT,EN_PIN);
-	
-	_delay_us(1);//TODO: busy flag prüfen
 	DATA_PORT = 0x00;
 }
 
@@ -53,7 +51,7 @@ uint8_t lcd_read()
 
 void lcd_cmd_write(uint8_t cmd, uint8_t chip)
 {
-	lcd_select_chip(chip);
+	wait_while_busy(chip);
 	LOW(RW_PORT, RW_PIN);//write
 	LOW(RS_PORT, RS_PIN);//instruction
 	lcd_write(cmd, chip);
@@ -62,7 +60,7 @@ void lcd_cmd_write(uint8_t cmd, uint8_t chip)
 
 void lcd_data_write(uint8_t data, uint8_t chip)
 {
-	lcd_select_chip(chip);
+	wait_while_busy(chip);
 	LOW(RW_PORT, RW_PIN);//write
 	HIGH(RS_PORT, RS_PIN);//data
 	lcd_write(data, chip);
@@ -70,7 +68,7 @@ void lcd_data_write(uint8_t data, uint8_t chip)
 
 void lcd_dummy_read(uint8_t chip)
 {
-	lcd_select_chip(chip);
+	wait_while_busy(chip);
 	HIGH(RW_PORT, RW_PIN);//read
 	HIGH(RS_PORT, RS_PIN);//data
 	HIGH(EN_PORT, EN_PIN);
@@ -80,8 +78,8 @@ void lcd_dummy_read(uint8_t chip)
 
 uint8_t lcd_data_read(uint8_t chip)
 {
+	wait_while_busy(chip);
 	uint8_t data;
-	lcd_select_chip(chip);
 	HIGH(RW_PORT, RW_PIN);//read
 	HIGH(RS_PORT, RS_PIN);//data
 	data = lcd_read();
@@ -90,21 +88,11 @@ uint8_t lcd_data_read(uint8_t chip)
 
 uint8_t lcd_state_read(uint8_t chip)
 {
+	wait_while_busy(chip);
 	uint8_t temp_state;
-	lcd_select_chip(chip);
 	HIGH(RW_PORT, RW_PIN);
 	LOW(RS_PORT, RS_PIN);
-	DATA_PORT = 0x00;
-	DATA_DDR = 0x00;
-	HIGH(EN_PORT, EN_PIN);
-	_delay_us(2);
-	LOW(EN_PORT, EN_PIN);
-	_delay_us(1);
-	temp_state = DATA_PIN;
-	//temp_state = lcd_read();
-
-	DATA_DDR = 0xFF;
-
+	temp_state = lcd_read();
 	return temp_state;
 }
 
