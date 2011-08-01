@@ -72,6 +72,8 @@ uint8_t lcd_data_read(uint8_t chip);
 
 uint8_t lcd_state_read(uint8_t chip);
 
+void wait_while_busy(uint8_t chip);
+
 void lcd_setup();
 
 void lcd_init();

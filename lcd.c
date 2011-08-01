@@ -108,6 +108,20 @@ uint8_t lcd_state_read(uint8_t chip)
 	return temp_state;
 }
 
+void wait_while_busy(uint8_t chip)
+{
+	lcd_select_chip(chip);
+	HIGH(RW_PORT, RW_PIN);
+	LOW(RS_PORT, RS_PIN);
+	DATA_PORT = 0x00;
+	DATA_DDR = 0x00;
+	HIGH(EN_PORT, EN_PIN);
+	_delay_us(2);//>1000ns
+	LOW(EN_PORT, EN_PIN);
+	while (LCD_BUSY & DATA_PIN);
+	DATA_DDR = 0xFF;
+}
+
 void lcd_setup()
 {
 	RS_DDR |= (1<<RS_PIN);
