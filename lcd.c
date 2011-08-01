@@ -8,6 +8,7 @@
 
 #define DATA_PORT PORTB
 #define DATA_DDR  DDRB
+#define DATA_PIN  PINB
 
 #define RS_PORT PORTD
 #define RS_DDR  DDRD
@@ -52,6 +53,8 @@
 #define LINE0			0x00
 
 #define LCD_BUSY		0x80
+#define LCD_ON			0x20
+#define LCD_RESET		0x10
 
 void lcd_select_chip(uint8_t chip)
 {
@@ -87,6 +90,20 @@ void lcd_write(uint8_t value, uint8_t chip)
 	DATA_PORT = 0x00;
 }
 
+uint8_t lcd_read()
+{
+	uint8_t data;
+	DATA_PORT = 0xFF;
+	DATA_DDR = 0x00;
+	HIGH(EN_PORT, EN_PIN);
+	_delay_us(2); //>320ns
+	data = DATA_PIN;
+	LOW(EN_PORT, EN_PIN);
+
+	DATA_DDR = 0xFF;
+	return data;
+}
+
 void lcd_cmd_write(uint8_t cmd, uint8_t chip)
 {
 	lcd_select_chip(chip);
@@ -103,6 +120,47 @@ void lcd_data_write(uint8_t data, uint8_t chip)
 	HIGH(RS_PORT, RS_PIN);//data
 	lcd_write(data, chip);
 }
+
+void lcd_dummy_read(uint8_t chip)
+{
+	lcd_select_chip(chip);
+	HIGH(RW_PORT, RW_PIN);//read
+	HIGH(RS_PORT, RS_PIN);//data
+	HIGH(EN_PORT, EN_PIN);
+	_delay_us(2);//>1000ns
+	LOW(EN_PORT, EN_PIN);
+}
+
+uint8_t lcd_data_read(uint8_t chip)
+{
+	uint8_t data;
+	lcd_select_chip(chip);
+	HIGH(RW_PORT, RW_PIN);//read
+	HIGH(RS_PORT, RS_PIN);//data
+	data = lcd_read();
+	return data;
+}
+
+uint8_t lcd_state_read(uint8_t chip)
+{
+	uint8_t temp_state;
+	lcd_select_chip(chip);
+	HIGH(RW_PORT, RW_PIN);
+	LOW(RS_PORT, RS_PIN);
+	DATA_PORT = 0x00;
+	DATA_DDR = 0x00;
+	HIGH(EN_PORT, EN_PIN);
+	_delay_us(2);
+	LOW(EN_PORT, EN_PIN);
+	_delay_us(1);
+	temp_state = DATA_PIN;
+	//temp_state = lcd_read();
+
+	DATA_DDR = 0xFF;
+
+	return temp_state;
+}
+
 void lcd_setup()
 {
 	RS_DDR |= (1<<RS_PIN);
