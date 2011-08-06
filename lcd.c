@@ -110,6 +110,63 @@ void wait_while_busy(uint8_t chip)
 	DATA_DDR = 0xFF;
 }
 
+void lcd_set_pixel(uint8_t x, uint8_t y, char color)
+{
+	uint8_t chip, page;
+	if ( x < 64 )
+		chip = CHIP1;
+	else
+	{
+		chip = CHIP2;
+		x -= 64;
+	}
+	page = y/8;
+	y = y%8;
+	wait_while_busy(chip);
+	lcd_cmd_write(CMD_LCD_SET_ADDRESS|x,chip);
+	lcd_cmd_write(CMD_LCD_SET_PAGE|page,chip);
+	lcd_dummy_read(chip);
+	wait_while_busy(chip);
+	uint8_t data;
+	data = lcd_data_read(chip);
+	if (color)
+		data |= (1<<y);
+	else
+		data &= ~(1<<y);
+	lcd_cmd_write(CMD_LCD_SET_ADDRESS|x,chip);
+	lcd_data_write(data,chip);
+}
+
+void lcd_invert()
+{
+	for ( uint8_t pageloop = 0; pageloop < 8; pageloop++ )
+	{
+		wait_while_busy(CHIP1);
+		wait_while_busy(CHIP2);
+		lcd_cmd_write(CMD_LCD_SET_ADDRESS|ADDRESS0, CHIP1|CHIP2);
+		lcd_cmd_write(CMD_LCD_SET_PAGE|pageloop, CHIP1|CHIP2);
+		lcd_dummy_read(CHIP1);
+		lcd_dummy_read(CHIP2);
+		for ( uint8_t chip = CHIP1; chip <= CHIP2; chip++ )
+		{
+			uint8_t data[64];
+			uint8_t loop;
+			for ( loop = 0; loop < 64; loop++ )
+			{
+				wait_while_busy(chip);
+				data[loop] = lcd_data_read(chip);
+			}
+			wait_while_busy(chip);
+			lcd_cmd_write(CMD_LCD_SET_ADDRESS|ADDRESS0, chip);
+			for ( loop = 0; loop < 64; loop++ )
+			{
+				wait_while_busy(chip);
+				lcd_data_write(~data[loop], chip);
+			}
+		}
+	}
+}
+
 void lcd_setup()
 {
 	RS_DDR |= (1<<RS_PIN);
